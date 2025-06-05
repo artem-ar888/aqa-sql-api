@@ -85,18 +85,18 @@ public class APITest {
         Assertions.assertEquals(expectedSecondCardBalance, newUserCardsInfo.get(1).getBalance());
     }
 
-//    @Test
-//    @DisplayName("Money transfer fails when requested amount exceeds account balance")
-//    public void shouldNotTransferWhenAmountMoreThanBalance() {
-//        List<DataHelper.CardsInfo> userCardsInfo = getUserCards();
-//        int initialFirstCardBalance = userCardsInfo.get(0).getBalance();
-//        int initialSecondCardBalance = userCardsInfo.get(1).getBalance();
-//        int amount = DataHelper.generateInvalidAmount(initialFirstCardBalance);
-//
-//        APIHelper.moneyTransfer(userCardsInfo, 0, 1, amount);
-//        List<DataHelper.CardsInfo> newCardsInfo = getUserCards();
-//
-//        Assertions.assertEquals(initialFirstCardBalance, newCardsInfo.get(0).getBalance());
-//        Assertions.assertEquals(initialSecondCardBalance, newCardsInfo.get(1).getBalance());
-//    }
+    @Test
+    @DisplayName("Money transfer fails when requested amount exceeds account balance")
+    public void shouldNotTransferWhenAmountMoreThanBalance() {
+        List<DataHelper.CardsInfo> userCardsInfo = getUserCards();
+        int initialFirstCardBalance = userCardsInfo.get(0).getBalance();
+        int initialSecondCardBalance = userCardsInfo.get(1).getBalance();
+        int amount = DataHelper.generateInvalidAmount(initialFirstCardBalance);
+
+        APIHelper.moneyTransfer(userCardsInfo, 0, 1, amount);
+        List<DataHelper.CardsInfo> newCardsInfo = getUserCards();
+
+        Assertions.assertEquals(initialFirstCardBalance, newCardsInfo.get(0).getBalance());
+        Assertions.assertEquals(initialSecondCardBalance, newCardsInfo.get(1).getBalance());
+    }
 }
