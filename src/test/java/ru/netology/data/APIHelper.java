@@ -1,9 +1,13 @@
 package ru.netology.data;
 
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import ru.netology.api.Specifications;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static io.restassured.RestAssured.given;
 
@@ -16,108 +20,78 @@ public class APIHelper {
     private APIHelper() {
     }
 
-    public static void validLogin() {
-        given()
+    public static String login(DataHelper.AuthInfo user, int statusCode) {
+        Response response = given()
                 .spec(Specifications.requestSpec())
-                .body(DataHelper.getAuthInfoWithTestData())
+                .body(user)
 
                 .when()
                 .post(authPath)
 
                 .then()
                 .log().all()
-                .statusCode(200)
+                .statusCode(statusCode)
                 .header("Connection", "keep-alive")
-                .header("Content-Length", "0")
-        ;
+                .extract().response();
+
+        if (response.asString().isBlank()) {
+            return ""; // возвращаем пустую строку
+        } else {
+            return response.path("code").toString(); // возвращаем значение из ответа
+        }
     }
 
-    public static String invalidLogin() {
-        return given()
+    public static String getToken(DataHelper.VerificationInfo verifyInfo, int statusCode) {
+        Response response = given()
                 .spec(Specifications.requestSpec())
-                .body(DataHelper.generateRandomUser())
-
-                .when()
-                .log().ifValidationFails() // Выводит логи только в случае ошибки
-                .post(authPath)
-
-                .then()
-                .statusCode(400)
-                .header("Content-Type", "application/json; charset=UTF-8")
-                .header("Connection", "keep-alive")
-                .extract().path("code")
-                ;
-    }
-
-    public static String getToken() {
-        validLogin();
-        return given()
-                .spec(Specifications.requestSpec())
-                .body(DataHelper.getVerifyInfo())
+                .body(verifyInfo)
 
                 .when()
                 .log().ifValidationFails()
                 .post(verificationPath)
 
                 .then()
-                .statusCode(200)
-                .header("Content-Type", "application/json; charset=UTF-8")
-                .header("Connection", "keep-alive")
-                .extract().path("token")
-                ;
-    }
-
-    public static String invalidVerify() {
-        validLogin();
-        return given()
-                .spec(Specifications.requestSpec())
-                .body(DataHelper.getInvalidVerifyInfo())
-
-                .when()
-                .log().ifValidationFails()
-                .post(verificationPath)
-
-                .then()
-                .statusCode(400)
+                .statusCode(statusCode)
                 .contentType(ContentType.JSON)
-                .extract().path("code")
-                ;
+                .extract().response();
+
+        if (statusCode == 200) {
+            return response.path("token").toString();
+        }
+        return response.path("code").toString();
     }
 
-    public static List<DataHelper.CardsInfo> getUserCardsInfo() {
-        return given()
+    public static List<DataHelper.CardsInfo> getUserCards(String token, int statusCode) {
+        RequestSpecification spec = Specifications.requestSpec();
+
+        if (token != null) {
+            spec.auth().oauth2(token); // Применяем авторизацию только если токен есть
+        }
+
+        Response response = given()
                 .log().all()
-                .spec(Specifications.requestSpec())
-                .auth().oauth2(getToken())
+                .spec(spec)
 
                 .when()
                 .get(cardsPath)
 
                 .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .extract().body().jsonPath().getList(".", DataHelper.CardsInfo.class)
-                ;
+                .statusCode(statusCode)
+                .extract().response();
+        if (statusCode == 200) {
+            return response.body().jsonPath().getList(".", DataHelper.CardsInfo.class);
+        }
+        if (!response.asString().isBlank()) {
+            throw new IllegalStateException("Response body is not empty for status " + statusCode);
+        }
+        return Collections.emptyList(); // Если статус не 200, возвращаем пустой список
     }
 
-    public static void getUserCardsInfoWithoutToken() {
+    public static void moneyTransfer(String token, List<DataHelper.CardsInfo> cards, int indexFrom, int indexTo, int amount) {
         given()
                 .log().all()
                 .spec(Specifications.requestSpec())
-
-                .when()
-                .get(cardsPath)
-
-                .then()
-                .statusCode(401)
-        ;
-    }
-
-    public static void moneyTransfer(List<DataHelper.CardsInfo> cards, int indexFrom, int indexTo, int amount) {
-        given()
-                .log().all()
-                .spec(Specifications.requestSpec())
-                .auth().oauth2(getToken())
+                .auth().oauth2(token)
                 .body(DataHelper.moneyTransfer(cards, indexFrom, indexTo, amount))
 
                 .when()

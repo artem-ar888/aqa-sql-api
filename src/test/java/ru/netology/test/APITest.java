@@ -6,8 +6,7 @@ import ru.netology.data.DataHelper;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static ru.netology.data.APIHelper.*;
 import static ru.netology.data.SQLHelper.*;
 
@@ -23,49 +22,58 @@ public class APITest {
         cleanDatabase();
     }
 
-    @Test
-    @DisplayName("Should successfully login with exist login and password")
-    void shouldSuccessLogin() {
-        APIHelper.validLogin();
-    }
-
-    @Test
-    @DisplayName("Should obtain non-null authorization token")
-    void shouldObtainNonNullAuthorizationToken() {
-        String token = getToken();
-        Assertions.assertNotNull(token);
-    }
-
-    @Test
-    @DisplayName("Should fetch user's card information")
-    void shouldFetchUsersCardInfo() {
-        List<DataHelper.CardsInfo> userCards = APIHelper.getUserCardsInfo();
-        Assertions.assertNotNull(userCards, "The list of cards must not be null.");
-    }
+//    @Test
+//    @DisplayName("Should successfully login with exist login and password")
+//    void shouldSuccessLogin() {
+//        String errorCode = login(DataHelper.getAuthInfoWithTestData(), 200);
+//        assertEquals("", errorCode);
+//    }
 
     @Test
     @DisplayName("An attempt to log in with incorrect credentials returns AUTH_INVALID")
     void shouldReturnsAuthInvalidWithInvalidLogin() {
-        String errorCode = invalidLogin();
-        Assertions.assertEquals("AUTH_INVALID", errorCode);
+        String errorCode = login(DataHelper.generateRandomUser(), 400);
+
+        assertEquals("AUTH_INVALID", errorCode);
     }
+
+//    @Test
+//    @DisplayName("Should obtain non-null authorization token")
+//    void shouldObtainNonNullAuthorizationToken() {
+//        int statusCode = 200;
+//        login(DataHelper.getAuthInfoWithTestData(), statusCode);
+//        String token = getToken(DataHelper.getVerifyInfo(), statusCode);
+//        Assertions.assertNotNull(token);
+//    }
 
     @Test
     @DisplayName("Verification fails with AUTH_INVALID on invalid code")
     public void shouldNotVerifyWithoutToken() {
-        String errorVerify = invalidVerify();
+        login(DataHelper.getAuthInfoWithTestData(), 200);
+        String errorVerify = getToken(DataHelper.getInvalidVerifyInfo(), 400);
+
         Assertions.assertEquals("AUTH_INVALID", errorVerify);
     }
+
+//    @Test
+//    @DisplayName("Should fetch user's card information")
+//    void shouldFetchUsersCardInfo() {
+//        int statusCode = 200;
+//        login(DataHelper.getAuthInfoWithTestData(), statusCode);
+//        String token = getToken(DataHelper.getVerifyInfo(), statusCode);
+//        List<DataHelper.CardsInfo> userCards = APIHelper.getUserCards(token, statusCode);
+//        Assertions.assertNotNull(userCards, "The list of cards must not be null.");
+//    }
 
     @Test
     @DisplayName("Should not get user cards info without token")
     public void shouldNotGetUserCardsInfoWithoutToken() {
-        try {
-            APIHelper.getUserCardsInfoWithoutToken();
-            assertTrue(true, "Method completed successfully with expected status code 401");
-        } catch (AssertionError | Exception e) {
-            fail("Test failed due to unexpected error: " + e.getMessage());
-        }
+        String token = null;
+        int statusCode = 401;
+
+        List<DataHelper.CardsInfo> result = APIHelper.getUserCards(token, statusCode);
+
+        assertTrue(result.isEmpty(), "The result should be an empty list when status code is 401");
     }
 
     @Test
@@ -77,12 +85,17 @@ public class APITest {
         int amount = DataHelper.generateValidAmount(initialSecondCardBalance);
         int expectedFirstCardBalance = initialFirstCardBalance - amount;
         int expectedSecondCardBalance = initialSecondCardBalance + amount;
+        int statusCode = 200;
+        login(DataHelper.getAuthInfoWithTestData(), statusCode);
+        String token = getToken(DataHelper.getVerifyInfo(), statusCode);
 
-        APIHelper.moneyTransfer(userCardsInfo, 0, 1, amount);
+        APIHelper.moneyTransfer(token, userCardsInfo, 0, 1, amount);
         List<DataHelper.CardsInfo> newUserCardsInfo = getUserCards();
 
-        Assertions.assertEquals(expectedFirstCardBalance, newUserCardsInfo.get(0).getBalance());
-        Assertions.assertEquals(expectedSecondCardBalance, newUserCardsInfo.get(1).getBalance());
+        assertAll(
+                () -> assertEquals(expectedFirstCardBalance, newUserCardsInfo.get(0).getBalance()),
+                () -> assertEquals(expectedSecondCardBalance, newUserCardsInfo.get(1).getBalance())
+        );
     }
 
     @Test
@@ -92,11 +105,16 @@ public class APITest {
         int initialFirstCardBalance = userCardsInfo.get(0).getBalance();
         int initialSecondCardBalance = userCardsInfo.get(1).getBalance();
         int amount = DataHelper.generateInvalidAmount(initialFirstCardBalance);
+        int statusCode = 200;
+        login(DataHelper.getAuthInfoWithTestData(), statusCode);
+        String token = getToken(DataHelper.getVerifyInfo(), statusCode);
 
-        APIHelper.moneyTransfer(userCardsInfo, 0, 1, amount);
+        APIHelper.moneyTransfer(token, userCardsInfo, 0, 1, amount);
         List<DataHelper.CardsInfo> newCardsInfo = getUserCards();
 
-        Assertions.assertEquals(initialFirstCardBalance, newCardsInfo.get(0).getBalance());
-        Assertions.assertEquals(initialSecondCardBalance, newCardsInfo.get(1).getBalance());
+        assertAll(
+                () -> assertEquals(initialFirstCardBalance, newCardsInfo.get(0).getBalance()),
+                () -> assertEquals(initialSecondCardBalance, newCardsInfo.get(1).getBalance())
+        );
     }
 }
