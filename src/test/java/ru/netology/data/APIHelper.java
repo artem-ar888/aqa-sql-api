@@ -7,7 +7,6 @@ import ru.netology.api.Specifications;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static io.restassured.RestAssured.given;
 
