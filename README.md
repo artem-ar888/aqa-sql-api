@@ -1,5 +1,7 @@
 [![Java CI with Gradle](https://github.com/artem-ar888/aqa-sql-api/actions/workflows/gradle.yml/badge.svg)](https://github.com/artem-ar888/aqa-sql-api/actions/workflows/gradle.yml)
 
+В данный момент в приложении выявлен дефект, который приводит к падению одного из автотестов. Сборка на GitHub Actions завершается со статусом Failure. В результате заведён [баг-репорт](https://github.com/artem-ar888/aqa-sql-api/issues/1) в Issues.
+
 ---
 
 # Домашнее задание к занятию «3.2. SQL»
