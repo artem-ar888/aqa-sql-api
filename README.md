@@ -1,1 +1,162 @@
 [![Java CI with Gradle](https://github.com/artem-ar888/aqa-sql-api/actions/workflows/gradle.yml/badge.svg)](https://github.com/artem-ar888/aqa-sql-api/actions/workflows/gradle.yml)
+
+---
+
+# Домашнее задание к занятию «3.2. SQL»
+
+В качестве результата пришлите ссылки на ваши GitHub-проекты в личном кабинете студента на сайте [netology.ru](https://netology.ru).
+
+Все задачи этого занятия нужно делать **в разных репозиториях**.
+
+**Важно**: проекты с решением задач по данной теме реализуются с использованием Selenide.
+
+**Важно**: если у вас что-то не получилось, то оформляйте issue [по установленным правилам](https://github.com/netology-code/aqa-homeworks/blob/master/report-requirements.md).
+
+## Как сдавать задачи
+
+1. Инициализируйте на своём компьютере пустой Git-репозиторий.
+1. Добавьте в него готовый файл [.gitignore](https://github.com/netology-code/aqa-homeworks/blob/master/.gitignore).
+1. Добавьте в этот же каталог код, требуемый в ДЗ.
+1. Сделайте необходимые коммиты.      
+1. Добавьте в каталог `artifacts` целевой сервис [app-deadline.jar](https://github.com/netology-code/aqa-homeworks/blob/master/sql/app-deadline.jar).
+1. Создайте публичный репозиторий на GitHub и свяжите свой локальный репозиторий с удалённым.
+1. Сделайте пуш — удостоверьтесь, что ваш код появился на GitHub.
+1. Ссылку на ваш проект отправьте в личном кабинете на сайте [netology.ru](https://netology.ru).
+1. Задачи, отмеченные как необязательные, можно не сдавать, это не повлияет на получение зачёта.  
+1. Интеграция проектов с CI необязательна и выполняется по желанию студента.          
+
+**Важно**: задачи этого занятия не предполагают подключения к CI.
+
+## DBeaver
+
+Дистрибутивы для установки DBeaver в наиболее популярных операционных системах можно найти в хранилище по [ссылке](https://disk.360.yandex.ru/d/XrJ81UlrUlHANQ). Установка выполняется в обычном порядке, рекомендуются настройки по умолчанию.
+
+## Volumes
+
+Пожалуйста, ознакомьтесь с кратким руководством по работе с [volumes](https://github.com/netology-code/aqa-homeworks/blob/master/sql/volumes.md).
+
+## SQL
+
+Пожалуйста, ознакомьтесь с кратким руководством по работе с клиентами [SQL](https://github.com/netology-code/aqa-homeworks/blob/master/sql/mysql-psql.md).
+
+## Настройка CI     
+
+**Важно**: интеграция проектов с CI необязательна           
+
+Если вы решили получить бейдж сборки в данном проекте, то можно использовать инструкцию по настройке интеграции с Github Actions ([инструкция](https://github.com/netology-code/aqa-homeworks/blob/master/github-actions-integration)) с небольшими доработками:   
+- в среде выполнения сборки необходимо запустить контейнер базы данных. В образах Github Actions есть докер, поэтому будет достаточно добавить в yml файл секцию с запуском контейнера фоновом режиме            
+```
+    - name: Container start
+      uses: hoverkraft-tech/compose-action@v2.0.1
+```    
+- для успешного запуска SUT необходимо подождать полного запуска контейнера, самый простой способ выполнения данной задачи - использование команды sleep, добавляем в состав шагов сборки еще одну секцию     
+```
+    - name: Waiting for сontainer start
+      run: sleep 30
+```    
+
+После выполнения интеграции необходимо удостовериться, что в CI запускается контейнер, SUT и выполняются автотесты. Автотесты могут падать и сборка может быть красной из-за багов тестируемого приложения. В таком случае должны быть заведены репорты на обнаруженные в ходе тестирования дефекты в отдельных issues, [придерживайтесь схемы при описании](https://github.com/netology-code/aqa-homeworks/blob/master/report-requirements.md).      
+
+## Задача №2: backend vs frontend (необязательная)
+
+Бэкенд-разработчики сказали, что они всё уже сделали, это фронтендщики тормозят. Поэтому функцию перевода денег с карты на карту мы протестировать через веб-интерфейс не можем.
+
+Зато они выдали нам описание REST API, которое позволяет это сделать, использовать нужно тот же `app-deadline.jar`.
+
+Вот описание API:
+
+- Логин
+```http
+POST http://localhost:9999/api/auth
+Content-Type: application/json
+
+{
+  "login": "vasya",
+  "password": "qwerty123"
+}
+```
+
+- Верификация
+```http
+POST http://localhost:9999/api/auth/verification
+Content-Type: application/json
+
+{
+  "login": "vasya",
+  "code": "599640"
+}
+```
+В ответе, в поле «token» придёт токен аутентификации, который нужно использовать в последующих запросах.
+
+<details>
+<summary>Подсказка по REST-assured</summary>
+
+Если вам приходит в ответ следующий JSON:
+```json
+{
+  "status": "ok"
+}
+```
+
+то вы можете вытащить значение из ответа с помощью REST-assured следующим образом:
+
+```java
+      String status = ... // ваш обычный запрос  
+      .then()
+          .statusCode(200)
+      .extract()
+          .path("status")
+      ;
+
+      // используются matcher'ы Hamcrest
+      assertThat(status, equalTo("ok"));
+```
+
+Если вам нужно вытащить весь ответ, чтобы потом искать по нему, например, если нужно несколько полей, то:
+
+```java
+      Response response = ... // ваш обычный запрос  
+      .then()
+          .statusCode(200)
+      .extract()
+          .response()
+      ;
+
+      String status = response.path("status");
+      // используются matcher'ы Hamcrest
+      assertThat(status, equalTo("ok"));
+```
+
+</details>
+
+- Просмотр карт
+```http
+GET http://localhost:9999/api/cards
+Content-Type: application/json
+Authorization: Bearer {{token}}
+```
+
+Где {{token}} — это значение «token» с предыдущего шага. Фигурные скобки писать не нужно.
+
+- Перевод с карты на карту (любую)
+```
+POST http://localhost:9999/api/transfer
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "from": "5559 0000 0000 0002",
+  "to": "5559 0000 0000 0008",
+  "amount": 5000
+}
+```
+
+Внимательно изучите запросы и ответы и, используя любой инструмент, который вам нравится, реализуйте тесты API.
+
+В результате выполнения этой задачи вы должны положить в репозиторий следующие файлы:
+* docker-compose.yml*,
+* app-deadline.jar,
+* schema.sql,
+* код ваших автотестов.
+
+P.S. Всё не может быть хорошо, наверняка разработчики где-то допустили ошибки. Не забывайте заводить issue о найденных багах 😈
